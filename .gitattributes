@@ -2,3 +2,6 @@
 *.patch text eol=lf
 *.png binary
 *.jar binary
+*.sh text eol=lf
+integracion/gradlew text eol=lf
+*.bat text eol=crlf

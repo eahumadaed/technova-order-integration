@@ -28,11 +28,11 @@ artemis/broker.xml  Direcciones y colas de mensajes
 parches/            Adaptación de la aplicación de tienda de referencia
 ```
 
-Los componentes de integración se ejecutan como procesos independientes del mismo artefacto Java. La implementación de Bodega es un consumidor de consola que informa los productos de cada pedido.
+Las clases `MessagingConfiguration`, `CanonicalModel`, `MarketplaceAdapter`, `WebTranslator`, `MarketplaceTranslator`, `BillingAdapter` y `WarehouseConsumer` dividen las responsabilidades. Los componentes se ejecutan como procesos independientes del mismo artefacto Java. La implementación de Bodega es un consumidor de consola que informa los productos de cada pedido.
 
 ## Requisitos
 
-- JDK 21 y Gradle 9.2.1 instalados y disponibles en `PATH`.
+- JDK 21 disponible en `PATH`. El Gradle Wrapper descarga Gradle 9.2.1.
 - Git y ActiveMQ Artemis 2.40.0.
 - Servicios compatibles con los contratos REST y SOAP descritos abajo.
 - Acceso a Maven Central para las dependencias.
@@ -45,10 +45,10 @@ Desde la raíz del repositorio:
 
 ```powershell
 java -version
-gradle -p .\integracion test installDist
+.\integracion\gradlew.bat -p .\integracion test integrationTest installDist
 ```
 
-En Linux, use `gradle -p ./integracion test installDist`. Las pruebas cubren los cálculos canónicos de ambos orígenes, la coherencia del identificador de envío, el rechazo de entidades XML externas y la validación de la respuesta SOAP.
+En Linux, use `./integracion/gradlew -p ./integracion test integrationTest installDist`. Las pruebas unitarias cubren cálculos, validaciones y XML. La tarea `integrationTest` utiliza Artemis embebido y un servidor HTTP SOAP local simulado para verificar entrega, distribución, redelivery, enriquecimiento, fallo parcial y recuperación. El workflow ejecuta las pruebas unitarias sin servicios externos.
 
 ## Configuración del broker
 
@@ -117,4 +117,4 @@ Inicie `vendor/referencia/TiendaWeb` con Gradle, el JAR de `vendor/referencia/Ma
 
 El adapter de Marketplace usa la detección de duplicados del broker; la caché es limitada y no constituye una garantía indefinida. Facturación registra las respuestas recibidas en archivos `.done` y marca con `.pending` las solicitudes cuyo resultado puede ser incierto. Si se pierde una respuesta, detenga el consumidor y concilie el pedido con el servicio antes de reintentar; revise también la DLQ. El contrato SOAP no incluye una clave de idempotencia y no permite garantizar por sí solo una única emisión.
 
-Los errores individuales del adapter REST se registran por pedido; actualmente pueden coexistir con un código de salida global exitoso. El sistema no implementa una planificación periódica propia ni un servicio completo de inventario.
+El adapter REST informa la cantidad de pedidos encontrados, exitosos y fallidos, junto con los identificadores fallidos. Devuelve código de salida distinto de cero si algún pedido falla; Artemis rechaza los identificadores ya presentes en su caché de duplicados, que se contabilizan como fallidos. El sistema no implementa una planificación periódica propia ni un servicio completo de inventario.
